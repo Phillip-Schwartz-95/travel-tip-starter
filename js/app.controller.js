@@ -104,7 +104,9 @@ function onAddLoc(geo) {
     const loc = {
         name: locName,
         rate: +prompt(`Rate (1-5)`, '3'),
-        geo
+        geo,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
     }
     locService.save(loc)
         .then((savedLoc) => {
@@ -147,6 +149,7 @@ function onUpdateLoc(locId) {
             const rate = prompt('New rate?', loc.rate)
             if (rate && rate !== loc.rate) {
                 loc.rate = rate
+                loc.updatedAt = Date.now()
                 locService.save(loc)
                     .then(savedLoc => {
                         flashMsg(`Rate was set to: ${savedLoc.rate}`)
