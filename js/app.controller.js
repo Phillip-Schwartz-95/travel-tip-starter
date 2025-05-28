@@ -18,6 +18,8 @@ window.app = {
     onSetFilterBy,
 }
 
+const gUserPos = null
+
 function onInit() {
     getFilterByFromQueryParams()
     loadAndRenderLocs()
@@ -48,6 +50,7 @@ function renderLocs(locs) {
                 ${(loc.createdAt !== loc.updatedAt) ?
                 ` | Updated: ${utilService.elapsedTime(loc.updatedAt)}`
                 : ''}
+                ${gUserPos ? ` | Distance: ${utilService.getDistance(gUserPos, loc.geo).toFixed(2)} km` : ''}
             </p>
             <div class="loc-btns">     
                <button title="Delete" onclick="app.onRemoveLoc('${loc.id}')">🗑️</button>
@@ -132,6 +135,7 @@ function loadAndRenderLocs() {
 function onPanToUserPos() {
     mapService.getUserPosition()
         .then(latLng => {
+            gUserPos = latLng //save user's pos in g variable above
             mapService.panTo({ ...latLng, zoom: 15 })
             unDisplayLoc()
             loadAndRenderLocs()
@@ -184,6 +188,14 @@ function displayLoc(loc) {
     el.querySelector('.loc-name').innerText = loc.name
     el.querySelector('.loc-address').innerText = loc.geo.address
     el.querySelector('.loc-rate').innerHTML = '★'.repeat(loc.rate)
+
+    if (gUserPos) {
+        const distance = utilService.getDistance(gUserPos, loc.geo).toFixed(2)
+        el.querySelector('.loc-distance').innerText = `Distance: ${distance} km`
+    } else {
+        el.querySelector('.loc-distance').innerText = ''
+    }
+
     el.querySelector('[name=loc-copier]').value = window.location
     el.classList.add('show')
 
