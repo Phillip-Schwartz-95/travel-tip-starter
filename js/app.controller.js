@@ -18,7 +18,7 @@ window.app = {
     onSetFilterBy,
 }
 
-const gUserPos = null
+var gUserPos = null
 
 function onInit() {
     getFilterByFromQueryParams()
