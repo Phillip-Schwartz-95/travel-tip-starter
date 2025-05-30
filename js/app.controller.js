@@ -16,9 +16,15 @@ window.app = {
     onShareLoc,
     onSetSortBy,
     onSetFilterBy,
+    onLocFormSubmit,
+    onCancelLocDialog
 }
 
 var gUserPos = null
+
+let gDialogGeo = null
+let gDialogLocId = null
+
 
 function onInit() {
     getFilterByFromQueryParams()
@@ -101,27 +107,86 @@ function onSearchAddress(ev) {
 }
 
 function onAddLoc(geo) {
-    const locName = prompt('Loc name', geo.address || 'Just a place')
-    if (!locName) return
+    gDialogGeo = geo
+    gDialogLocId = null
+
+    const dialog = document.querySelector('.loc-dialog')
+    const form = dialog.querySelector('form')
+
+    // Reset form fields
+    form['loc-name'].value = geo.address || ''  // default
+    form['loc-rate'].value = '3'  //default
+
+    dialog.showModal()
+}
+
+async function onLocFormSubmit(ev) {
+    ev.preventDefault()
+
+    const dialog = document.querySelector('.loc-dialog')
+    const name = dialog.querySelector('[name=loc-name]').value.trim()
+    const rate = +dialog.querySelector('[name=loc-rate]').value
+
+    if (!name || rate < 1 || rate > 5) {
+        alert('Please enter a valid name and rate (1-5).')
+        return
+    }
 
     const loc = {
-        name: locName,
-        rate: +prompt(`Rate (1-5)`, '3'),
-        geo,
-        createdAt: Date.now(),
+        name,
+        rate,
+        geo: gDialogGeo,
         updatedAt: Date.now(),
     }
-    locService.save(loc)
-        .then((savedLoc) => {
-            flashMsg(`Added Location (id: ${savedLoc.id})`)
-            utilService.updateQueryParams({ locId: savedLoc.id })
-            loadAndRenderLocs()
+
+    if (gDialogLocId) {
+        loc.id = gDialogLocId
+
+        // Keep existing createdAt from DB
+        locService.getById(gDialogLocId).then(existingLoc => {
+            loc.createdAt = existingLoc.createdAt
+
+            locService.save(loc)
+                .then(savedLoc => {
+                    flashMsg(`Location updated (id: ${savedLoc.id})`)
+                    utilService.updateQueryParams({ locId: savedLoc.id })
+                    loadAndRenderLocs()
+                    dialog.close()
+                    gDialogGeo = null
+                    gDialogLocId = null
+                })
+                .catch(err => {
+                    console.error('OOPs:', err)
+                    flashMsg('Cannot save location')
+                })
         })
-        .catch(err => {
-            console.error('OOPs:', err)
-            flashMsg('Cannot add location')
-        })
+    } else {
+        // Adding a new one
+        loc.createdAt = Date.now()
+
+        locService.save(loc)
+            .then(savedLoc => {
+                flashMsg(`Location added (id: ${savedLoc.id})`)
+                utilService.updateQueryParams({ locId: savedLoc.id })
+                loadAndRenderLocs()
+                dialog.close()
+                gDialogGeo = null
+                gDialogLocId = null
+            })
+            .catch(err => {
+                console.error('OOPs:', err)
+                flashMsg('Cannot save location')
+            })
+    }
 }
+
+function onCancelLocDialog() {
+    const dialog = document.querySelector('.loc-dialog')
+    dialog.close()
+    gDialogGeo = null
+    gDialogLocId = null
+}
+
 
 function loadAndRenderLocs() {
     locService.query()
@@ -150,23 +215,23 @@ function onPanToUserPos() {
 function onUpdateLoc(locId) {
     locService.getById(locId)
         .then(loc => {
-            const rate = prompt('New rate?', loc.rate)
-            if (rate && rate !== loc.rate) {
-                loc.rate = rate
-                loc.updatedAt = Date.now()
-                locService.save(loc)
-                    .then(savedLoc => {
-                        flashMsg(`Rate was set to: ${savedLoc.rate}`)
-                        loadAndRenderLocs()
-                    })
-                    .catch(err => {
-                        console.error('OOPs:', err)
-                        flashMsg('Cannot update location')
-                    })
+            gDialogLocId = loc.id
+            gDialogGeo = loc.geo
 
-            }
+            const dialog = document.querySelector('.loc-dialog')
+            const form = dialog.querySelector('form')
+
+            form['loc-name'].value = loc.name
+            form['loc-rate'].value = loc.rate
+
+            dialog.showModal()
+        })
+        .catch(err => {
+            console.error('OOPs:', err)
+            flashMsg('Cannot update location')
         })
 }
+
 
 function onSelectLoc(locId) {
     return locService.getById(locId)
