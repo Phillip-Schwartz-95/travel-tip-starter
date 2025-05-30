@@ -38,7 +38,8 @@
                     <div>
                         <label>
                             Min Rate:
-                            <input name="filter-by-rate" type="range" min="0" max="5" value="0" class="filter-rate-range"
+                            <input name="filter-by-rate" type="range" min="0" max="5" value="0"
+                                class="filter-rate-range"
                                 onchange="this.title=this.value;app.onSetFilterBy({minRate: this.value})" />
                         </label>
                     </div>
@@ -60,10 +61,16 @@
                 <section class="loc-stats">
                     <h3>Statistics</h3>
                     <div class="loc-stats-rate">
-                        <h4>By rate:</h4>
+                        <h4>By Rate:</h4>
                         <div class="pie"></div>
                         <ul class="legend"></ul>
                     </div>
+                    <div class="loc-stats-updated">
+                        <h3>By Times Updated:</h3>
+                        <div class="pie"></div>
+                        <ul class="legend"></ul>
+                    </div>
+
                 </section>
             </section>
         </div>
